@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "express": "^4.16.3",
-    "phaser": "3.3.0",
+    "phaser": "3.4.0",
     "phaser-animated-tiles": "^1.0.0",
     "socket.io": "^2.1.1"
   }
