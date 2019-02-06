@@ -40,8 +40,8 @@ function preload() {
 }
 
 function create() {
-  const width = 800;
-  const height = 600;
+  const width = document.body.clientWidth;
+  const height = screen.height * 0.8;
 
   for (var i = 0; i <= width * 1.5 / 64 + 1; i++) {
     for (var j = 0; j <= height * 1.5 / 64 + 1; j++) {
@@ -63,6 +63,11 @@ function create() {
   nametext = this.add.text(16, 15, '', { fontSize: '28px', fill: '#000' });
   killtext = this.add.text(16, 60, 'Total kill: ', { fontSize: '28px', fill: '#000' });
   bosstext = this.add.text(16, 105, 'BOSS: ?????', { fontSize: '28px', fill: '#000' });
+
+  this.socket.emit('sendResolution', {
+    width: width,
+    height: height
+  });
 
   this.socket.on('currentPlayers', function (players) {
     Object.keys(players).forEach(function (id) {

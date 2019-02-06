@@ -3,6 +3,9 @@ var app = express()
 var server = require('http').Server(app)
 var io = require('socket.io').listen(server)
 
+let width = 800;
+let height = 600;
+
 var players = {}
 let mon = {}
 const maxmonster = 10;
@@ -60,8 +63,10 @@ io.on('connection', function (socket) {
     bullet_array.push(new_bullet);
   });
 
-  socket.on('playerGetHit', function () {
-    console.log('aw!')
+  socket.on('sendResolution', function (data) {
+    console.log(data)
+    width = data.width;
+    height = data.height;
   })
 
   socket.on('disconnect', function () {
@@ -137,16 +142,12 @@ function updateSpeedBullets() {
       }
     }
 
-    if (bullet.x < -10 || bullet.x > 2000 || bullet.y < -10 || bullet.y > 2000) {
+    if (bullet.x < -10 || bullet.x > width + 10 || bullet.y < -10 || bullet.y > height + 10) {
       bullet_array.splice(i, 1);
       i--;
     }
   }
   io.emit("bulletsUpdate", bullet_array);
-}
-
-function checkMonsterHit() {
-
 }
 
 function addNewMonster() {
@@ -168,8 +169,8 @@ function addNewMonster() {
       monId = Math.floor(Math.random() * 100 + 1);
       mon[monId] = {
         id: monId,
-        x: Math.floor(Math.random() * 1000),
-        y: Math.floor(Math.random() * 1000),
+        x: Math.floor(Math.random() * width),
+        y: Math.floor(Math.random() * height),
         health: 1,
         movementx: items[Math.floor(Math.random() * items.length)],
         movementy: items[Math.floor(Math.random() * items.length)],
@@ -194,9 +195,9 @@ function changeMovement() {
 
 function monsterMovement() {
   for (var key in mon) {
-    if (mon[key].x < -25 || mon[key].x > 1025 || mon[key].y < -25 || mon[key].y > 1025) {
-      mon[key].x = Math.floor(Math.random() * 1000);
-      mon[key].y = Math.floor(Math.random() * 1000);
+    if (mon[key].x < -25 || mon[key].x > width + 25 || mon[key].y < -25 || mon[key].y > height +25) {
+      mon[key].x = Math.floor(Math.random() * width);
+      mon[key].y = Math.floor(Math.random() * height);
     } else {
       switch (mon[key].movementx) {
         case -monsterspeed:
