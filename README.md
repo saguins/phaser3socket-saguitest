@@ -1,4 +1,1 @@
-modify from https://github.com/nkholski/phaser3-es6-webpack
-Set up
-1.yarn
-2.yarn dev
+Source: https://gamedevacademy.org/create-a-basic-multiplayer-game-in-phaser-3-with-socket-io-part-1/
