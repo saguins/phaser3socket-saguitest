@@ -3,11 +3,13 @@ var app = express()
 var server = require('http').Server(app)
 var io = require('socket.io').listen(server)
 
-let width = 800;
-let height = 600;
+let width = 2000;
+let height = 2000;
 
 var players = {}
 let mon = {}
+let star = {}
+
 const maxmonster = 10;
 const monsterspeed = 2;
 let monsizewidth = 50;
@@ -20,6 +22,9 @@ const bulletspeed = 50;
 
 var totalkill = 0
 let bossalive = false
+
+let leaderArr = ["player1", "player2", "player3", "player4", "player5"];
+let leaderscoreArr = [-1, -1, -1, -1, -1];
 
 app.use(express.static(__dirname + '/public'))
 
@@ -39,6 +44,7 @@ io.on('connection', function (socket) {
     x: Math.floor(Math.random() * 700) + 50,
     y: Math.floor(Math.random() * 700) + 50,
     playerId: socket.id,
+    score: 0
   }
 
   socket.emit('currentPlayers', players)
@@ -48,6 +54,11 @@ io.on('connection', function (socket) {
 
   socket.broadcast.emit('newPlayer', players[socket.id])
   socket.broadcast.emit('newEnemy', mon)
+
+  updateLeaderBoard()
+
+  socket.emit('leaderboardNameUpdate', leaderArr)
+  socket.emit('leaderboardScoreUpdate', leaderscoreArr)
 
   socket.on('playerMovement', function (movementData) {
     players[socket.id].x = movementData.x
@@ -63,18 +74,60 @@ io.on('connection', function (socket) {
     bullet_array.push(new_bullet);
   });
 
-  socket.on('sendResolution', function (data) {
-    console.log(data)
-    width = data.width;
-    height = data.height;
-  })
+  socket.on('updateDeadPlayer', function (data) {
+    if (players[socket.id].playerId == data.playerid) {
+      console.log('player (' + players[socket.id].playerId + ') is dead! now respawn.')
+      players[socket.id].score = 0;
+
+      for (var i = 0; i < leaderArr.length; i++) {
+        if (leaderArr[i] == players[socket.id].playerId) {
+          leaderscoreArr[i] = players[socket.id].score;
+        }
+      }
+
+      updateLeaderBoard();
+    }
+  });
 
   socket.on('disconnect', function () {
     console.log('user disconnected', socket.id)
     delete players[socket.id]
     io.emit('disconnect', socket.id)
   })
+
+  socket.on('starCollected', function (newstarid) {
+    if (players[socket.id].playerId == newstarid.playerid) {
+      players[socket.id].score += Math.floor(Math.random() * (100 - 10) + 10);
+      console.log('player (' + players[socket.id].playerId + ') score: ' + players[socket.id].score)
+      delete star[newstarid.starid];
+      let total = { playerid: players[socket.id].playerId, score: players[socket.id].score }
+      io.emit('playerScoreUpdate', total)
+      io.emit('starUpdate', newstarid.starid)
+
+      updateLeaderBoard()
+    }
+  })
 })
+
+function updateLeaderBoard() {
+  for (var key in players) {
+    //console.log('id: ' + players[key].playerId + ' have score: ' + players[key].score);
+    for (let i = 0; i < leaderscoreArr.length; i++) {
+      if (players[key].playerId == leaderArr[i]) {
+        leaderscoreArr[i] = players[key].score;
+      } else {
+        if (players[key].score > leaderscoreArr[i]) {
+          leaderArr[i] = players[key].playerId;
+          leaderscoreArr[i] = players[key].score;
+          break;
+        }
+      }
+
+    }
+  }
+  io.emit('leaderboardNameUpdate', leaderArr)
+  io.emit('leaderboardScoreUpdate', leaderscoreArr)
+}
 
 function updateSpeedBullets() {
   for (var i = 0; i < bullet_array.length; i++) {
@@ -111,6 +164,12 @@ function updateSpeedBullets() {
           console.log('SEND ' + key)
           console.log(key + " get killed!")
           io.emit('monsterGetKilled', key);
+          star[mon[key].id] = {
+            x: mon[key].x,
+            y: mon[key].y,
+            playerId: mon[key].id,
+          }
+          io.emit('starCreate', star[mon[key].id])
           delete mon[key]
 
           totalkill += 1
@@ -195,7 +254,7 @@ function changeMovement() {
 
 function monsterMovement() {
   for (var key in mon) {
-    if (mon[key].x < -25 || mon[key].x > width + 25 || mon[key].y < -25 || mon[key].y > height +25) {
+    if (mon[key].x < 0 || mon[key].x > width || mon[key].y < 0 || mon[key].y > height) {
       mon[key].x = Math.floor(Math.random() * width);
       mon[key].y = Math.floor(Math.random() * height);
     } else {
