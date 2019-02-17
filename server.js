@@ -23,7 +23,7 @@ const bulletspeed = 50;
 var totalkill = 0
 let bossalive = false
 
-let leaderArr = ["player1", "player2", "player3", "player4", "player5"];
+let leaderArr = ["player", "player", "player", "player", "player"];
 let leaderscoreArr = [-1, -1, -1, -1, -1];
 
 app.use(express.static(__dirname + '/public'))
@@ -91,7 +91,16 @@ io.on('connection', function (socket) {
 
   socket.on('disconnect', function () {
     console.log('user disconnected', socket.id)
+    for (var i = 0; i < leaderArr.length; i++) {
+      if (leaderArr[i] == players[socket.id].playerId) {
+        leaderArr[i] = 'player';
+        leaderscoreArr[i] = -1;
+        break;
+      }
+    }
     delete players[socket.id]
+    updateLeaderBoard();
+
     io.emit('disconnect', socket.id)
   })
 
@@ -113,16 +122,25 @@ function updateLeaderBoard() {
   for (var key in players) {
     //console.log('id: ' + players[key].playerId + ' have score: ' + players[key].score);
     for (let i = 0; i < leaderscoreArr.length; i++) {
-      if (players[key].playerId == leaderArr[i]) {
-        leaderscoreArr[i] = players[key].score;
-      } else {
-        if (players[key].score > leaderscoreArr[i]) {
+      if (players[key].score > leaderscoreArr[i]) {
+        if (players[key].playerId == leaderArr[i]) {
+          leaderscoreArr[i] = players[key].score;
+          break;
+        } else {
+          if (i < 4) {
+            leaderArr[i + 1] = leaderArr[i];
+            leaderscoreArr[i + 1] = leaderscoreArr[i]
+          }
           leaderArr[i] = players[key].playerId;
           leaderscoreArr[i] = players[key].score;
           break;
         }
+      } else if (players[key].score == leaderscoreArr[i]) {
+        if (players[key].playerId == leaderArr[i]) {
+          leaderscoreArr[i] = players[key].score;
+          break;
+        }
       }
-
     }
   }
   io.emit('leaderboardNameUpdate', leaderArr)
